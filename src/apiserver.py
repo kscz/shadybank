@@ -117,12 +117,12 @@ class ShadyBucksAPIDaemon:
             auth_rows = await self._psql_pool.fetch('SELECT s.account_id, s.id, s.type, s.secret ' \
                 'FROM cards c, secrets s where c.pan = $1 AND s.account_id = c.account_id', args['pan'])
             if len(args['otp']):
-                self._check_otp_ratelimit(args['pan'])
+                await self._check_otp_ratelimit(args['pan'])
         elif 'account_id' in args:
             auth_rows = await self._psql_pool.fetch('SELECT s.account_id, s.id, s.type, s.secret ' \
                 'FROM secrets s where s.account_id = $1', int(args['account_id']))
             if len(args['otp']):
-                self._check_otp_ratelimit(args['account_id'])
+                await self._check_otp_ratelimit(args['account_id'])
         else:
             raise web.HTTPBadRequest()
 
@@ -257,7 +257,7 @@ class ShadyBucksAPIDaemon:
             if not card_row:
                 raise web.HTTPNotFound()
             card_data = { 'account': card_row['account_id'], 'status': card_row['status'], 'card': { 'pan': args['pan'] } }
-            self._check_otp_ratelimit(args['pan'])
+            await self._check_otp_ratelimit(args['pan'])
             auth_rows = await self._psql_pool.fetch('SELECT s.account_id, s.id, s.type, s.secret ' \
                 'FROM secrets s where s.account_id = $1 and s.type =\'totp\'', card_row['account_id'])
             auth_match = False
